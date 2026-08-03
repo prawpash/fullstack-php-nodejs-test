@@ -46,4 +46,21 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class);
     }
+
+    /**
+     * Scope the query to the active users list, applying search and sorting.
+     */
+    public function scopeForList(Builder $query, ?string $search, string $sortBy): void
+    {
+        $query
+            ->where('active', true)
+            ->when($search, function (Builder $query, string $search) {
+                $query->where(function (Builder $query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->withCount('orders')
+            ->orderBy($sortBy, $sortBy === 'created_at' ? \SortDirection::Descending : \SortDirection::Ascending);
+    }
 }
