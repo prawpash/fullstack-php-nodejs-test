@@ -16,6 +16,8 @@ class UserController extends Controller
     {
         $user = User::create($request->validated());
 
+        Mail::to($user)->send(new WelcomeEmail($user));
+        Mail::to(User::admins()->get())->send(new NewUserNotificationEmail($user));
 
         return (new UserResource($user))
             ->response()
