@@ -18,11 +18,14 @@ class CreateUserTest extends TestCase
     {
         Mail::fake();
 
-        $response = $this->postJson('/api/users', [
-            'email' => 'john@example.com',
-            'name' => 'John Doe',
-            'password' => 'secret123',
-        ]);
+        $admin = User::factory()->admin()->create(['password' => 'secret123']);
+
+        $response = $this->withBasicAuth($admin->email, 'secret123')
+            ->postJson('/api/users', [
+                'email' => 'john@example.com',
+                'name' => 'John Doe',
+                'password' => 'secret123',
+            ]);
 
         $response->assertCreated();
 
@@ -54,11 +57,14 @@ class CreateUserTest extends TestCase
     {
         Mail::fake();
 
-        $this->postJson('/api/users', [
-            'email' => 'john@example.com',
-            'name' => 'John Doe',
-            'password' => 'secret123',
-        ]);
+        $admin = User::factory()->admin()->create(['password' => 'secret123']);
+
+        $this->withBasicAuth($admin->email, 'secret123')
+            ->postJson('/api/users', [
+                'email' => 'john@example.com',
+                'name' => 'John Doe',
+                'password' => 'secret123',
+            ]);
 
         Mail::assertQueued(WelcomeEmail::class, function (WelcomeEmail $mail) {
             return $mail->hasTo('john@example.com')
@@ -70,14 +76,15 @@ class CreateUserTest extends TestCase
     {
         Mail::fake();
 
-        $adminOne = User::factory()->admin()->create(['email' => 'admin1@example.com']);
-        $adminTwo = User::factory()->admin()->create(['email' => 'admin2@example.com']);
+        $adminOne = User::factory()->admin()->create(['email' => 'admin1@example.com', 'password' => 'secret123']);
+        $adminTwo = User::factory()->admin()->create(['email' => 'admin2@example.com', 'password' => 'secret123']);
 
-        $this->postJson('/api/users', [
-            'email' => 'john@example.com',
-            'name' => 'John Doe',
-            'password' => 'secret123',
-        ]);
+        $this->withBasicAuth($adminOne->email, 'secret123')
+            ->postJson('/api/users', [
+                'email' => 'john@example.com',
+                'name' => 'John Doe',
+                'password' => 'secret123',
+            ]);
 
         Mail::assertQueued(NewUserNotificationEmail::class, function (NewUserNotificationEmail $mail) use ($adminOne, $adminTwo) {
             return $mail->hasTo($adminOne->email)
@@ -88,27 +95,33 @@ class CreateUserTest extends TestCase
 
     public function test_it_validates_the_request_input(): void
     {
-        $this->postJson('/api/users', [])
+        $admin = User::factory()->admin()->create(['password' => 'secret123']);
+
+        $this->withBasicAuth($admin->email, 'secret123')
+            ->postJson('/api/users', [])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['email', 'password', 'name']);
 
-        $this->postJson('/api/users', [
-            'email' => 'not-an-email',
-            'name' => 'Jo',
-            'password' => 'short',
-        ])->assertUnprocessable()
+        $this->withBasicAuth($admin->email, 'secret123')
+            ->postJson('/api/users', [
+                'email' => 'not-an-email',
+                'name' => 'Jo',
+                'password' => 'short',
+            ])->assertUnprocessable()
             ->assertJsonValidationErrors(['email', 'name', 'password']);
     }
 
     public function test_email_must_be_unique(): void
     {
+        $admin = User::factory()->admin()->create(['password' => 'secret123']);
         User::factory()->create(['email' => 'taken@example.com']);
 
-        $this->postJson('/api/users', [
-            'email' => 'taken@example.com',
-            'name' => 'John Doe',
-            'password' => 'secret123',
-        ])->assertUnprocessable()
+        $this->withBasicAuth($admin->email, 'secret123')
+            ->postJson('/api/users', [
+                'email' => 'taken@example.com',
+                'name' => 'John Doe',
+                'password' => 'secret123',
+            ])->assertUnprocessable()
             ->assertJsonValidationErrors(['email']);
     }
 }
