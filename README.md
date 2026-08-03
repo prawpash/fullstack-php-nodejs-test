@@ -1,57 +1,126 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Fullstack PHP Node.js Test
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 13 API project. It provides user management endpoints protected by HTTP Basic authentication, plus an interactive API reference (Scalar) and OpenAPI documentation (Scramble).
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3+
+- [Composer](https://getcomposer.org/)
+- [Node.js](https://nodejs.org/) and npm (for building frontend assets)
+- SQLite (default) or a database of your choice
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Getting Started
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 1. Install dependencies
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Configure the environment
 
-## Contributing
+Copy the example environment file and generate the application key:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Code of Conduct
+The default configuration uses SQLite, so no database server is required. The SQLite database file is created automatically during migration.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 3. Run migrations and seed the database
 
-## Security Vulnerabilities
+```bash
+php artisan migrate --seed
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+`--seed` runs the `DatabaseSeeder`, which creates the fixed accounts listed below plus a few random users for development.
+
+### 4. Build frontend assets (optional)
+
+```bash
+npm run build
+```
+
+### 5. Start the server
+
+```bash
+php artisan serve
+```
+
+The application will be available at `http://localhost:8000`.
+
+### 6. Access the documentation
+
+- API reference (Scalar): `http://localhost:8000/scalar`
+- OpenAPI document: `http://localhost:8000/docs/api.json`
+
+## Seeded Users
+
+The seeder creates one fixed account per role. All of them use the password `password`.
+
+| Role    | Email                 | Password   | Notes                                      |
+| ------- | --------------------- | ---------- | ------------------------------------------ |
+| Admin   | `admin@example.com`   | `password` | Can edit any user.                         |
+| Manager | `manager@example.com` | `password` | Can only edit users with the `user` role.  |
+| User    | `user@example.com`    | `password` | Can only edit themselves.                  |
+
+Use these credentials for HTTP Basic authentication when calling the API.
+
+## API Endpoints
+
+All API routes require HTTP Basic authentication (email as username, password as password).
+
+### `POST /api/users`
+
+Creates a new user. Returns the created user's details (excluding the password).
+
+### `GET /api/users`
+
+Returns a paginated list of active users.
+
+Query parameters:
+
+| Parameter  | Type    | Default      | Description                                   |
+| ---------- | ------- | ------------ | --------------------------------------------- |
+| `search`   | string  | —            | Filters by name or email.                     |
+| `page`     | integer | `1`          | Page number.                                  |
+| `sortBy`   | string  | `created_at` | Sort field: `name`, `email`, or `created_at`. |
+
+Each user in the response includes `orders_count` (total number of orders) and `can_edit` (whether the currently authenticated user may edit that user).
+
+### Example request
+
+```bash
+curl -u admin@example.com:password \
+  "http://localhost:8000/api/users?search=john&page=1&sortBy=name"
+```
+
+## Running Tests
+
+```bash
+php artisan test
+```
+
+## Development
+
+To run the local dev servers (Laravel server, queue worker, logs, and Vite) in one command:
+
+```bash
+composer dev
+```
+
+## Using DDEV
+
+If you are using DDEV, you can run the project as usual with `ddev`:
+
+```bash
+ddev start
+ddev composer install
+ddev artisan migrate --seed
+ddev php artisan test
+```
 
 ## License
 
