@@ -3,4 +3,7 @@
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/users', [UserController::class, 'store']);
+Route::middleware('api.basic.auth')->group(function () {
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users', [UserController::class, 'index']);
+});
